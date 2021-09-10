@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="elm.js"></script>
+    <link href='//spoqa.github.io/spoqa-han-sans/css/SpoqaHanSansNeo.css' rel='stylesheet' type='text/css'>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        * {
+            font-family: 'Spoqa Han Sans Neo', 'sans-serif';
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="elm"></div>
+</body>
+<script src="https://www.gstatic.com/firebasejs/9.0.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.0.1/firebase-auth-compat.js"></script>
+<script>
+    const firebaseApp = firebase.initializeApp({
+        apiKey: "AIzaSyDDv4-eyVj_V4p6J6jFOxYBqtPFmql4JtQ",
+        authDomain: "fire-elm.firebaseapp.com",
+        projectId: "fire-elm",
+        storageBucket: "fire-elm.appspot.com",
+        messagingSenderId: "937070766017",
+        appId: "1:937070766017:web:c563dee3590f98d1397140"
+    });
+    const db = firebaseApp.firestore();
+    const auth = firebaseApp.auth();
+</script>
+
+<script src="component.js"></script>
+<script>
+    var app = Elm.Main.init({
+        node: document.getElementById('elm')
+    });
+
+    app.ports.firebaseSend.subscribe(function ({ msg, obj }) {
+        console.log(msg + " : " + obj);
+        if (msg == "addPost") {
+            obj.createdAt = firebase.firestore.FieldValue.serverTimestamp()
+            db.collection("posts").add(obj)
+                .then((docRef) => {
+                    app.ports.fromFirebase.send({ msg: "addPostSuccess", obj: null });
+                })
+                .catch((error) => {
+                    console.log(error);
+                    app.ports.fromFirebase.send({ msg: "addPostFail", obj: null });
+                });
+        } else if (msg == "getPosts") {
+            db.collection("posts").get()
+                .then((querySnapshot) => {
+                    const obj = [];
+                    querySnapshot.forEach((doc) => obj.push(doc.data()));
+                    obj.forEach((r) => { r.createdAt = r.createdAt.toMillis(); });
+                    app.ports.fromFirebase.send({ msg: "getPostsSuccess", obj: obj });
+                })
+                .catch((error) => {
+                    console.log(error);
+                    app.ports.fromFirebase.send({ msg: "getPostsFails", obj: null });
+                });
+        }
+    });
+
+</script>
+
+</html>
